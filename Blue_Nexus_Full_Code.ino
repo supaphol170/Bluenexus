@@ -67,7 +67,6 @@ void connectWiFi() {
   Serial.println("\nเชื่อมต่อสำเร็จ!");
   Serial.print("IP: ");
   Serial.println(WiFi.localIP());
-  Blynk.virtualWrite(V7, ssid);
 }
 
 // This function will be called every time data is sent to Virtual Pin V1
@@ -96,8 +95,11 @@ BLYNK_WRITE(V6) {
 
 // Called once Blynk is connected
 BLYNK_CONNECTED() {
-  Blynk.virtualWrite(V7, ssid);
-  Blynk.virtualWrite(V6, WiFi.localIP().toString());
+  for (int i = 0; i < 2; i++){ //for make sure have make a change in Blynk dashboard.
+    Blynk.virtualWrite(V7, ssid);
+    Blynk.virtualWrite(V6, WiFi.localIP().toString());
+    delay(15000);
+  }
 }
 
 // -------------------- Husky lens function--------------------
@@ -189,11 +191,19 @@ void setup() {
 
   // husky lens setup
   Wire.begin(21, 22);  // กำหนด SDA=21, SCL=22 ตามการต่อจริงของ ESP32
-  while (!huskylens.begin(Wire)) {
-      Serial.println(F("Begin failed!"));
+  int husky_retry = 0; //counting times for retry to connect between esp32 and husky lens
+  const int max_times = 10; //using for max retry to connect Huskylens
+  while (husky_retry < max_times) {
+    if (huskylens.begin(Wire)){
+      Serial.println(F("HuskyLens connected successfully!"));
+      break;
+    }
+    else{
+      Serial.println(F("HuskyLens begin failed, retrying..."));
+      husky_retry++;
       delay(1000);
+    }
   }
-
   // TDS setup
   pinMode(TdsSensorPin, INPUT);
   analogReadResolution(12);
